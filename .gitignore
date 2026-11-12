@@ -1,0 +1,7 @@
+# local mail credentials — never commit
+mail/config.php
+mail/sent.log
+
+# os / editor noise
+Thumbs.db
+.DS_Store

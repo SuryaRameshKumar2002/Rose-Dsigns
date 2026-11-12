@@ -125,7 +125,8 @@
     <div class="cbox ink" data-fade>
       <span class="eyebrow mono light"><svg class="dia"><use href="#i-dia"/></svg>Project brief</span>
       <h2 style="margin-top:18px">Your next chapter starts here.</h2>
-      <form class="brief" novalidate>
+      <form class="brief" action="send.php" method="post" novalidate>
+            <div class="hp" aria-hidden="true"><label>Leave this field empty<input type="text" name="company" tabindex="-1" autocomplete="off"></label></div>
         <div class="row">
           <input type="text" name="client" placeholder="Your name" aria-label="Your name" required>
           <input type="email" name="email" placeholder="you@yourbusiness.com" aria-label="Email" required>
@@ -136,18 +137,18 @@
         </div>
         <span class="mono" style="opacity:.6;margin-top:6px">What do you need?</span>
         <div class="chips" aria-label="What do you need?">
-          <label><input type="checkbox" name="need" value="Website">Website</label>
-          <label><input type="checkbox" name="need" value="Branding">Branding</label>
-          <label><input type="checkbox" name="need" value="Social & Content">Social &amp; content</label>
-          <label><input type="checkbox" name="need" value="SEO">SEO</label>
-          <label><input type="checkbox" name="need" value="WhatsApp Business">WhatsApp</label>
-          <label><input type="checkbox" name="need" value="Google Business Profile">Google Business</label>
-          <label><input type="checkbox" name="need" value="Graphics & Video">Video</label>
-          <label><input type="checkbox" name="need" value="Analytics">Analytics</label>
+          <label><input type="checkbox" name="need[]" value="Website">Website</label>
+          <label><input type="checkbox" name="need[]" value="Branding">Branding</label>
+          <label><input type="checkbox" name="need[]" value="Social & Content">Social &amp; content</label>
+          <label><input type="checkbox" name="need[]" value="SEO">SEO</label>
+          <label><input type="checkbox" name="need[]" value="WhatsApp Business">WhatsApp</label>
+          <label><input type="checkbox" name="need[]" value="Google Business Profile">Google Business</label>
+          <label><input type="checkbox" name="need[]" value="Graphics & Video">Video</label>
+          <label><input type="checkbox" name="need[]" value="Analytics">Analytics</label>
         </div>
         <textarea name="msg" rows="5" placeholder="Tell us about the project, timelines and anything you've already got (logo, site, socials)…" aria-label="Project brief"></textarea>
         <button class="btn rose bsub" type="submit" data-magnetic>Send project brief <svg class="ar"><use href="#i-ar"/></svg></button>
-        <p class="bhint">Opens your email app with the brief ready to send. Nothing is stored on this page.</p>
+        <p class="bhint">Sent straight to the studio, with a copy emailed to you. We reply within two business days.</p>
         <p class="bnote" aria-live="polite"></p>
       </form>
     </div>

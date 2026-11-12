@@ -348,19 +348,91 @@
   if (location.hash) { const d = $(location.hash); if (d && d.tagName === 'DETAILS') d.open = true; }
   addEventListener('hashchange', () => { const d = $(location.hash); if (d && d.tagName === 'DETAILS') { d.open = true; scrollTo(d, { offset: -110 }); } });
 
-  /* ---------- brief form -> mailto ---------- */
-  $$('form.brief').forEach(form => form.addEventListener('submit', e => {
-    e.preventDefault();
-    const fd = new FormData(form);
-    const name = (fd.get('client') || '').toString().trim(), email = (fd.get('email') || '').toString().trim();
+  /* ---------- brief form -> send.php (PHPMailer), mailto as the fallback ----------
+     send.php mails the brief to the studio and a confirmation to the sender.
+     If PHP is not available (a purely static preview) we drop back to mailto. */
+  const STUDIO_MAIL = 'hello@rosedsigns.com';
+  const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const ARROW = ' <svg class="ar"><use href="#i-ar"/></svg>';
+
+  $$('form.brief').forEach(form => {
     const note = form.querySelector('#briefNote, .bnote');
-    if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { if (note) note.textContent = 'Please add your name and a valid email so we can reply.'; form.querySelector(name ? '[name=email]' : '[name=client]')?.focus(); return; }
-    const needs = fd.getAll('need').join(', ') || 'Not specified';
-    const subject = encodeURIComponent('Project brief — ' + name);
-    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\nNeeds: ${needs}\nBudget: ${fd.get('budget') || 'Not specified'}\n\nWhat we have in mind:\n${fd.get('msg') || ''}\n\n— sent from the RoseDsigns landing page`);
-    if (note) note.textContent = 'Brief ready — opening your email app…';
-    location.href = `mailto:hello@rosedsigns.com?subject=${subject}&body=${body}`;
-  }));
+    const btn = form.querySelector('[type=submit]');
+    const idle = btn ? btn.innerHTML : '';
+    let busy = false;
+
+    const say = (text, kind) => {
+      if (!note) return;
+      note.textContent = text;
+      note.classList.remove('ok', 'err');
+      if (kind) note.classList.add(kind);
+    };
+
+    const briefBody = fd => {
+      const needs = fd.getAll('need[]').concat(fd.getAll('need')).join(', ') || 'Not specified';
+      return `Name: ${fd.get('client') || ''}\nEmail: ${fd.get('email') || ''}\n` +
+        `Business: ${fd.get('business') || '—'}\nNeeds: ${needs}\nBudget: ${fd.get('budget') || 'Not specified'}\n\n` +
+        `What we have in mind:\n${fd.get('msg') || ''}\n\n— sent from the RoseDsigns website`;
+    };
+
+    const toMailto = fd => {
+      const subject = encodeURIComponent('Project brief — ' + (fd.get('client') || ''));
+      location.href = `mailto:${STUDIO_MAIL}?subject=${subject}&body=${encodeURIComponent(briefBody(fd))}`;
+    };
+
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (busy) return;
+
+      const fd = new FormData(form);
+      const name = (fd.get('client') || '').toString().trim();
+      const email = (fd.get('email') || '').toString().trim();
+      if (!name || !EMAIL_RE.test(email)) {
+        say('Please add your name and a valid email so we can reply.', 'err');
+        form.querySelector(name ? '[name=email]' : '[name=client]')?.focus();
+        return;
+      }
+      fd.set('page', (location.pathname.split('/').pop() || 'index.html'));
+
+      busy = true;
+      form.classList.add('sending');
+      form.classList.remove('sent');
+      if (btn) btn.innerHTML = 'Sending…';
+      say('Sending your brief to the studio…');
+
+      const stop = new AbortController();
+      const timer = setTimeout(() => stop.abort(), 20000);
+
+      try {
+        const res = await fetch(form.getAttribute('action') || 'send.php', {
+          method: 'POST', body: fd, signal: stop.signal, headers: { Accept: 'application/json' }
+        });
+        const type = res.headers.get('content-type') || '';
+        if (!type.includes('json')) throw new Error('no-php');   // static host: no PHP to answer
+        const data = await res.json();
+
+        if (data.ok) {
+          form.classList.add('sent');
+          say(data.message || 'Thank you — your brief is with the studio.', 'ok');
+          form.reset();
+          if (btn) btn.innerHTML = 'Brief sent' + ARROW;
+        } else {
+          say(data.message || 'That did not send. Please try again.', 'err');
+          if (btn) btn.innerHTML = idle;
+          const bad = data.fields && Object.keys(data.fields)[0];
+          if (bad) form.querySelector(`[name=${bad}]`)?.focus();
+        }
+      } catch (err) {
+        say('The studio mailer is not reachable — opening your email app with the brief instead.', 'err');
+        if (btn) btn.innerHTML = idle;
+        toMailto(fd);
+      } finally {
+        clearTimeout(timer);
+        form.classList.remove('sending');
+        busy = false;
+      }
+    });
+  });
 
   addEventListener('load', () => ScrollTrigger.refresh());
   let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => ScrollTrigger.refresh(), 200); });

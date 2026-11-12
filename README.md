@@ -1,6 +1,6 @@
 # RoseDsigns — Landing Page (recruitment task)
 
-A responsive, animated landing page for **RoseDsigns** (creative design & digital marketing agency), built with plain HTML, CSS and JavaScript. No build step: open `index.html` through any static server.
+A responsive, animated landing page for **RoseDsigns** (creative design & digital marketing agency), built with plain HTML, CSS and JavaScript, plus one PHP endpoint that mails the project briefs. No build step and no Composer: drop the folder on a PHP host and it runs.
 
 Designed & developed by **Surya R**.
 
@@ -12,6 +12,9 @@ Designed & developed by **Surya R**.
 | `services.html` | All eight services as a hover-to-open accordion (deep-linkable: `services.html#seo`) |
 | `work.html` | Index of every project with hover preview |
 | `contact.html` | Full project brief form + contact cards |
+| `send.php` | Mail endpoint for every brief form (PHPMailer, SMTP optional) |
+| `mail/config.php` | SMTP credentials and recipients (`config.sample.php` documents every option) |
+| `lib/PHPMailer/` | Vendored PHPMailer 6.9.3 — no Composer step required |
 
 ## Stack
 
@@ -49,9 +52,58 @@ Sections alternate rather than sitting on cream throughout: ivory hero page → 
 - **Services** — bento cards with 3D tilt, a light sweep that follows the pointer, and project thumbnails that peek in from the card edge and slide out on hover.
 - **Work** — a sticky card deck that stacks cleanly with no dimming, plus image parallax.
 - **Services page** — rows open on hover (click still works) and a preview image follows the pointer.
-- **Everywhere** — pill navigation with mega-dropdowns, tile menu card, custom cursor with context labels, magnetic buttons, auto-hiding header, letter-flip footer headline, mailto project brief with validation.
+- **Everywhere** — pill navigation with mega-dropdowns, tile menu card, custom cursor with context labels, magnetic buttons, auto-hiding header, letter-flip footer headline, and a project brief form that mails the studio without leaving the page.
 
 Reduced-motion and touch devices are respected throughout.
+
+## Forms & email
+
+Every page carries the same project brief form — the CTA footer on `index.html`, `work.html` and `services.html`, and the large form on `contact.html`. All four post to **`send.php`**, which sends two messages with **PHPMailer 6.9.3**:
+
+1. the brief to the studio, with **Reply-To** set to the person who filled it in;
+2. a branded confirmation to that person, with Reply-To set back to the studio.
+
+### Transport
+
+PHPMailer is always the mailer. It picks its transport from the config:
+
+| Condition | Transport |
+|---|---|
+| `smtp_host`, `smtp_user` and `smtp_pass` are all filled in | **SMTP** (recommended — survives SPF/DKIM checks) |
+| any of them empty | PHPMailer's `mail()` transport |
+| `lib/PHPMailer/` and `vendor/` both missing | a plain `mail()` call, so the form never dies silently |
+
+The library is vendored in `lib/PHPMailer/` (`PHPMailer.php`, `SMTP.php`, `Exception.php`) so **no Composer step is needed**. If you do run `composer require phpmailer/phpmailer`, `send.php` prefers `vendor/autoload.php` automatically.
+
+### Setting the credentials
+
+Edit **`mail/config.php`** (see `mail/config.sample.php` for every option and common host settings):
+
+```php
+'smtp_host'   => 'smtp.hostinger.com',   // Gmail: smtp.gmail.com (App Password)
+'smtp_port'   => 465,                    // 465 = ssl, 587 = tls
+'smtp_secure' => 'ssl',
+'smtp_user'   => 'hello@rosedsigns.com',
+'smtp_pass'   => '••••••••',
+'to'          => 'hello@rosedsigns.com',
+'from'        => 'hello@rosedsigns.com', // must be a mailbox on your own domain
+```
+
+Environment variables override the file, so a hosting panel can supply the secrets instead: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_TO`, `MAIL_FROM`, `MAIL_FROM_NAME`.
+
+`mail/config.php` and `mail/sent.log` are in `.gitignore` — keep the credentials out of the repo.
+
+### What the endpoint does
+
+- Validates name and email server-side and answers with JSON (`{ok, message, transport}`), so the page never reloads.
+- Strips CR/LF from every field, which closes the usual mail-header injection hole.
+- Hidden honeypot field plus a per-IP rate limit (5 briefs / 10 minutes, file-based, no database).
+- Writes one line per submission to `mail/sent.log` when `log` is on.
+- Both emails go out as multipart HTML + plain text, styled in the brand palette.
+
+### Fallback
+
+If the site is served somewhere with no PHP, the response is not JSON, and `js/main.js` quietly falls back to the old `mailto:` handoff with the brief pre-filled — so the form still works on GitHub Pages or a plain preview. The form also has a real `action="send.php" method="post"`, so it submits normally if JavaScript is off.
 
 ## Handy URL flags
 
@@ -60,7 +112,17 @@ Reduced-motion and touch devices are respected throughout.
 
 ## Hosting
 
-Static files only. Upload the folder (or `git push`) to any static host: Hostinger, Netlify, Vercel, GitHub Pages, Cloudflare Pages. Serve over HTTP(S), not `file://`, because `js/hero3d.js` is an ES module.
+Upload the whole folder to any host with **PHP 8.0+** — Hostinger, cPanel, Plesk, or anything running Apache/LiteSpeed/nginx with PHP. Nothing to build, nothing to install: the pages are static and `send.php` is the only dynamic file.
+
+Serve over HTTP(S), not `file://`, because `js/hero3d.js` is an ES module.
+
+On a static-only host (GitHub Pages, Netlify without functions) everything still renders and the brief form falls back to `mailto:` — see **Forms & email** above.
+
+Quick local check with the mailer in place:
+
+```bash
+php -S 127.0.0.1:8000     # then open http://127.0.0.1:8000/
+```
 
 ## Screenshots
 

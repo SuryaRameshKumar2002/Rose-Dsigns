@@ -174,21 +174,22 @@
       <div class="fgrid2">
         <div>
           <h4>Create your project brief</h4>
-          <form class="brief"  novalidate>
+          <form class="brief" action="send.php" method="post" novalidate>
+            <div class="hp" aria-hidden="true"><label>Leave this field empty<input type="text" name="company" tabindex="-1" autocomplete="off"></label></div>
             <div class="row">
               <input type="text" name="client" placeholder="Your name" aria-label="Your name" required>
               <input type="email" name="email" placeholder="you@yourbusiness.com" aria-label="Email" required>
             </div>
             <div class="chips" aria-label="What do you need?">
-              <label><input type="checkbox" name="need" value="Website">Website</label>
-              <label><input type="checkbox" name="need" value="Branding">Branding</label>
-              <label><input type="checkbox" name="need" value="Social & Content">Social</label>
-              <label><input type="checkbox" name="need" value="SEO">SEO</label>
-              <label><input type="checkbox" name="need" value="Video">Video</label>
+              <label><input type="checkbox" name="need[]" value="Website">Website</label>
+              <label><input type="checkbox" name="need[]" value="Branding">Branding</label>
+              <label><input type="checkbox" name="need[]" value="Social & Content">Social</label>
+              <label><input type="checkbox" name="need[]" value="SEO">SEO</label>
+              <label><input type="checkbox" name="need[]" value="Video">Video</label>
             </div>
             <textarea name="msg" rows="3" placeholder="A new website, a brand refresh, your next campaign…" aria-label="Project brief"></textarea>
             <button class="btn bsub" type="submit" data-magnetic>Create project brief <svg class="ar"><use href="#i-ar"/></svg></button>
-            <p class="bhint">Opens your email app with the brief ready to send to the RoseDsigns team.</p>
+            <p class="bhint">Sent straight to the studio, with a copy emailed to you. We reply within two business days.</p>
             <p class="bnote" aria-live="polite"></p>
           </form>
         </div>
